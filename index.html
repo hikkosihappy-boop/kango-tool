@@ -1,9 +1,14 @@
+```html
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>45文字整形ツール</title>
+
+  <meta name="theme-color" content="#2563eb">
+
   <style>
     body {
       font-family: "Yu Gothic", sans-serif;
@@ -99,33 +104,26 @@
       }
     }
   </style>
-<meta name="theme-color" content="#2563eb">
 
-<link rel="manifest" href="manifest.json">
-
-<meta http-equiv="Content-Security-Policy"
-content="
-default-src 'self';
-script-src 'self' 'unsafe-inline';
-style-src 'self' 'unsafe-inline';
-img-src 'self' data:;
-connect-src 'none';
-object-src 'none';
-base-uri 'self';
-form-action 'self';
-">
+  <meta http-equiv="Content-Security-Policy"
+    content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline';
+      style-src 'self' 'unsafe-inline';
+      img-src 'self' data:;
+      connect-src 'none';
+      object-src 'none';
+      base-uri 'self';
+      form-action 'self';
+    ">
 </head>
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js');
-  });
-}
-</script>
+
 <body>
+
   <h1>訪問看護記録 45文字整形ツール</h1>
 
   <div class="container">
+
     <div class="panel">
       <h2>入力</h2>
 
@@ -140,7 +138,7 @@ if ('serviceWorker' in navigator) {
           <input type="number" id="indentSize" value="6" min="0" max="20">
         </label>
 
-        <button onclick="formatText()">整形</button>
+        <button type="button" onclick="formatText()">整形</button>
       </div>
 
       <textarea id="inputText" placeholder="ここに文章を入力してください。
@@ -153,8 +151,8 @@ if ('serviceWorker' in navigator) {
       <h2>整形結果</h2>
 
       <div class="controls">
-        <button onclick="copyOutput()">コピー</button>
-        <button onclick="clearAll()">クリア</button>
+        <button type="button" onclick="copyOutput()">コピー</button>
+        <button type="button" onclick="clearAll()">クリア</button>
       </div>
 
       <textarea id="outputText" readonly></textarea>
@@ -163,46 +161,68 @@ if ('serviceWorker' in navigator) {
         ・45文字付近で自動改行します。<br>
         ・2行目以降は全角空白でぶら下げします。<br>
         ・「。」「、」付近を優先して自然に改行します。<br>
-        ・すぐろくHOMEへそのまま貼り付け可能です。
+        ・そのまま貼り付け可能です。
       </div>
     </div>
+
   </div>
 
   <script>
+
     function formatText() {
+
       const input = document.getElementById('inputText').value;
-      const maxLen = parseInt(document.getElementById('lineLength').value, 10);
-      const indentSize = parseInt(document.getElementById('indentSize').value, 10);
+
+      const maxLen =
+        parseInt(document.getElementById('lineLength').value, 10);
+
+      const indentSize =
+        parseInt(document.getElementById('indentSize').value, 10);
 
       const lines = input.split('\n');
+
       const formattedLines = [];
 
       for (const rawLine of lines) {
+
         if (rawLine.trim() === '') {
           formattedLines.push('');
           continue;
         }
 
-        formattedLines.push(formatSingleLine(rawLine, maxLen, indentSize));
+        formattedLines.push(
+          formatSingleLine(rawLine, maxLen, indentSize)
+        );
       }
 
-      document.getElementById('outputText').value = formattedLines.join('\n');
+      document.getElementById('outputText').value =
+        formattedLines.join('\n');
     }
 
     function formatSingleLine(text, maxLen, indentSize) {
+
       const indent = '　'.repeat(indentSize);
 
       let result = '';
+
       let current = '';
+
       let isFirstLine = true;
 
       for (let i = 0; i < text.length; i++) {
+
         current += text[i];
 
         if (current.length >= maxLen) {
+
           let breakPos = -1;
 
-          for (let j = current.length - 1; j >= Math.max(0, current.length - 10); j--) {
+          for (
+            let j = current.length - 1;
+            j >= Math.max(0, current.length - 10);
+            j--
+          ) {
+
             if ('。、 '.includes(current[j])) {
               breakPos = j + 1;
               break;
@@ -214,6 +234,7 @@ if ('serviceWorker' in navigator) {
           }
 
           const linePart = current.slice(0, breakPos);
+
           const remainPart = current.slice(breakPos);
 
           if (!isFirstLine) {
@@ -223,11 +244,13 @@ if ('serviceWorker' in navigator) {
           result += linePart.trimEnd() + '\n';
 
           current = remainPart.trimStart();
+
           isFirstLine = false;
         }
       }
 
       if (current.length > 0) {
+
         if (!isFirstLine) {
           result += indent;
         }
@@ -238,28 +261,76 @@ if ('serviceWorker' in navigator) {
       return result;
     }
 
-function copyOutput() {
-  const output = document.getElementById('outputText');
+    async function copyOutput() {
 
-  output.removeAttribute('readonly');
+      const text =
+        document.getElementById('outputText').value;
 
-  output.select();
-  output.setSelectionRange(0, 99999);
+      if (!text) {
+        alert('コピーする内容がありません');
+        return;
+      }
 
-  try {
-    document.execCommand('copy');
-    alert('整形結果をコピーしました');
-  } catch (err) {
-    alert('コピーに失敗しました');
-  }
+      // 新方式
+      if (navigator.clipboard && window.isSecureContext) {
 
-  output.setAttribute('readonly', true);
-}
+        try {
+
+          await navigator.clipboard.writeText(text);
+
+          alert('整形結果をコピーしました');
+
+          return;
+
+        } catch (err) {
+
+          console.error(err);
+        }
+      }
+
+      // 古いブラウザ対策
+      try {
+
+        const textarea = document.createElement('textarea');
+
+        textarea.value = text;
+
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+
+        document.body.appendChild(textarea);
+
+        textarea.focus();
+        textarea.select();
+
+        const success =
+          document.execCommand('copy');
+
+        document.body.removeChild(textarea);
+
+        if (success) {
+          alert('整形結果をコピーしました');
+        } else {
+          alert('コピーに失敗しました');
+        }
+
+      } catch (err) {
+
+        console.error(err);
+
+        alert('コピーに失敗しました');
+      }
+    }
 
     function clearAll() {
+
       document.getElementById('inputText').value = '';
+
       document.getElementById('outputText').value = '';
     }
+
   </script>
+
 </body>
 </html>
+```
