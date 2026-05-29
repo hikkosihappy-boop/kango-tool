@@ -238,21 +238,23 @@ if ('serviceWorker' in navigator) {
       return result;
     }
 
-    function copyOutput() {
-      const output = document.getElementById('outputText');
-      output.select();
-      async function copyOutput() {
+function copyOutput() {
   const output = document.getElementById('outputText');
 
+  output.removeAttribute('readonly');
+
+  output.select();
+  output.setSelectionRange(0, 99999);
+
   try {
-    await navigator.clipboard.writeText(output.value);
+    document.execCommand('copy');
     alert('整形結果をコピーしました');
   } catch (err) {
     alert('コピーに失敗しました');
   }
+
+  output.setAttribute('readonly', true);
 }
-      alert('整形結果をコピーしました');
-    }
 
     function clearAll() {
       document.getElementById('inputText').value = '';
